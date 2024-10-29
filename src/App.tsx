@@ -63,4 +63,6 @@ function App() {
       </CartProvider>
     </AuthProvider>
   );
-}
+
+  
+}export default App;
