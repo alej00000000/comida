@@ -1,56 +1,69 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import { format } from 'date-fns';
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  stock: number;
-  expiryDate: string;
-  price: number;
-}
+import { collection, getDocs ,updateDoc, doc,deleteDoc} from 'firebase/firestore';
+import { Db,auth} from '../Firebase';
+import { ProductoInt } from '../Interfaces/InterfacesDeProfuctos';
+import { Trash2,Pen,Save } from 'lucide-react';
+import { parseISO } from 'date-fns';
 
 export default function AdminInventory() {
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: '1',
-      name: 'Fresh Apples',
-      category: 'Fruits',
-      stock: 15,
-      expiryDate: '2024-03-20',
-      price: 2.99
-    },
-    {
-      id: '2',
-      name: 'Organic Spinach',
-      category: 'Vegetables',
-      stock: 5,
-      expiryDate: '2024-03-15',
-      price: 3.49
-    },
-    {
-      id: '3',
-      name: 'Artisan Cheese',
-      category: 'Dairy',
-      stock: 20,
-      expiryDate: '2024-03-18',
-      price: 6.99
-    }
-  ]);
 
+
+  const [products, setProducts] = useState<ProductoInt[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
 
-  const handleUpdateStock = (id: string, newStock: number) => {
-    setProducts(products.map(p =>
-      p.id === id ? { ...p, stock: newStock } : p
+  const [tempStock, setTempStock] = useState<number | null>(null);
+  const [tempPrice, setTempPrice] = useState<number | null>(null);
+  const [tempExpiry, setTempExpiry] = useState<string | null>(null);
+
+  
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const productCollection = collection(Db, "productos");
+      const productSnapshot = await getDocs(productCollection);
+      
+      const productsData: ProductoInt[] = productSnapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name,
+        category: doc.data().category,
+        price: doc.data().price,
+        description: doc.data().description,
+        Imagen: doc.data().Imagen,
+        stock: doc.data().stock,
+        expiryDate: doc.data().expiryDate,
+      }));
+
+      setProducts(productsData);
+    };
+
+    fetchProducts();
+  }, []);
+
+  const handleSave = async (id: string) => {
+    const productDoc = doc(Db, 'productos', id);
+
+    if (tempStock !== null) await updateDoc(productDoc, { stock: tempStock });
+    if (tempPrice !== null) await updateDoc(productDoc, { price: tempPrice });
+    if (tempExpiry !== null) await updateDoc(productDoc, { expiryDate: tempExpiry });
+    
+    setProducts(products.map(p => 
+      p.id === id ? { ...p, stock: tempStock !== null ? tempStock : p.stock, 
+                      price: tempPrice !== null ? tempPrice : p.price, 
+                      expiryDate: tempExpiry !== null ? tempExpiry : p.expiryDate } : p
     ));
+
+    setEditingId(null);
+    setTempStock(null);
+    setTempPrice(null);
+    setTempExpiry(null);
   };
 
-  const handleUpdateExpiry = (id: string, newDate: string) => {
-    setProducts(products.map(p =>
-      p.id === id ? { ...p, expiryDate: newDate } : p
-    ));
+  const handleDelete = async (id: string) => {
+    const productDoc = doc(Db, 'productos', id);
+    await deleteDoc(productDoc); 
+    setProducts(products.filter(product => product.id !== id)); 
   };
 
   const filteredProducts = products.filter(product => {
@@ -59,7 +72,7 @@ export default function AdminInventory() {
       const daysUntilExpiry = Math.ceil(
         (new Date(product.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
       );
-      return daysUntilExpiry <= 7;
+      return daysUntilExpiry <= 10;
     }
     return true;
   });
@@ -82,7 +95,7 @@ export default function AdminInventory() {
       </div>
 
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="bg-gray-50 min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -100,9 +113,7 @@ export default function AdminInventory() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Price
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+             
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -120,8 +131,8 @@ export default function AdminInventory() {
                   {editingId === product.id ? (
                     <input
                       type="number"
-                      value={product.stock}
-                      onChange={(e) => handleUpdateStock(product.id, parseInt(e.target.value))}
+                      defaultValue={product.stock}
+                      onChange={(e) => setTempStock(parseInt(e.target.value))}
                       className="w-20 rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                     />
                   ) : (
@@ -132,35 +143,59 @@ export default function AdminInventory() {
                   {editingId === product.id ? (
                     <input
                       type="date"
-                      value={product.expiryDate}
-                      onChange={(e) => handleUpdateExpiry(product.id, e.target.value)}
+                      defaultValue  ={product.expiryDate}
+                      onChange={(e) => setTempExpiry(e.target.value)}
                       className="rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                     />
                   ) : (
                     <div className="text-sm text-gray-900">
-                      {format(new Date(product.expiryDate), 'MMM dd, yyyy')}
+                      {format(parseISO(product.expiryDate), 'MMM dd, yyyy')}
                     </div>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
+                  {editingId === product.id ? (
+                    <input
+                      type="number"
+                      defaultValue={product.price}
+                      onChange={(e) => setTempPrice(parseFloat(e.target.value))}
+                      className="w-20 rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                    />
+                  ) : (
+                    <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   {editingId === product.id ? (
                     <button
-                      onClick={() => setEditingId(null)}
+                      onClick={() => handleSave(product.id)}
                       className="text-green-600 hover:text-green-900"
                     >
-                      Save
+                      <Save className="mr-1" />
                     </button>
                   ) : (
-                    <button
-                      onClick={() => setEditingId(product.id)}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      Edit
-                    </button>
+                    <div>
+                      <button
+                        onClick={() => {
+                          setEditingId(product.id);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-900 mr-6"
+                      >
+                        <Pen className="mr-1" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          alert(`Producto eliminado: ${product.name}`), handleDelete(product.id)
+                        }}
+                        className="text-red-600 hover:text-red-900mr-6"
+                      >
+                        <Trash2 className="mr-1" />
+                      </button>
+                    </div>
+                  
                   )}
+
+                  
                 </td>
               </tr>
             ))}

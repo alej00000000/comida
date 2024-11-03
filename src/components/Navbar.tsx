@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, User, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import HomePage from '../pages/HomePage';
 
 export default function Navbar() {
   const { isAuthenticated, isAdmin, logout } = useAuth();
   const { items } = useCart();
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);  
 
   return (
     <nav className="bg-green-600 text-white shadow-lg">
@@ -35,7 +36,8 @@ export default function Navbar() {
                   Logout
                 </button>
               ) : (
-                <User className="h-6 w-6 cursor-pointer" />
+                <User className="h-6 w-6 cursor-pointer"/>
+                
               )}
               
               <div className="relative">

@@ -1,40 +1,36 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, ArrowLeft } from 'lucide-react';
-
-interface NewProduct {
-  name: string;
-  category: string;
-  description: string;
-  price: number;
-  stock: number;
-  expiryDate: string;
-  image: string;
-}
+import { collection, addDoc } from 'firebase/firestore';
+import { Db} from '../Firebase';
+import { ProductoSinID } from '../Interfaces/InterfacesDeProfuctos';
 
 export default function AddProduct() {
   const navigate = useNavigate();
-  const [product, setProduct] = useState<NewProduct>({
+  const [product, setProduct] = useState<ProductoSinID>({ 
     name: '',
     category: '',
     description: '',
     price: 0,
     stock: 0,
     expiryDate: '',
-    image: ''
+    Imagen: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would be an API call
-    // For demo, we'll store in localStorage
-    const existingProducts = JSON.parse(localStorage.getItem('products') || '[]');
-    const newProduct = {
-      ...product,
-      id: Date.now().toString(),
-    };
-    localStorage.setItem('products', JSON.stringify([...existingProducts, newProduct]));
-    navigate('/');
+    
+    try {
+      // Agregar producto a Firestore
+      const productsCollection = collection(Db, 'productos');
+      await addDoc(productsCollection, product);
+
+      alert('Producto agregado exitosamente.');
+      navigate('/ '); // Redirigir después de agregar el producto
+    } catch (error) {
+      console.error('Error al agregar el producto:', error);
+      alert('Hubo un error al agregar el producto.');
+    }
   };
 
   return (
@@ -48,7 +44,7 @@ export default function AddProduct() {
       </button>
 
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <h1 className="text-2xl font-bold mb-6">Add New Product</h1>
+        <h1 className="text-2xl font-bold mb-6">Añade nuevo producto</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -78,7 +74,7 @@ export default function AddProduct() {
                 <option value="">Select category</option>
                 <option value="Fruits">Fruits</option>
                 <option value="Vegetables">Vegetables</option>
-                <option value="Dairy">Dairy</option>
+                <option value="Dairy">Cereales</option>
               </select>
             </div>
 
@@ -143,15 +139,15 @@ export default function AddProduct() {
                 <input
                   type="url"
                   required
-                  value={product.image}
-                  onChange={(e) => setProduct({ ...product, image: e.target.value })}
+                  value={product.Imagen}
+                  onChange={(e) => setProduct({ ...product, Imagen: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   placeholder="https://example.com/image.jpg"
                 />
                 <button
                   type="button"
                   className="px-4 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md hover:bg-gray-200"
-                  onClick={() => window.open(product.image, '_blank')}
+                  onClick={() => window.open(product.Imagen, '_blank')}
                 >
                   <Upload className="h-5 w-5 text-gray-600" />
                 </button>
@@ -159,11 +155,11 @@ export default function AddProduct() {
             </div>
           </div>
 
-          {product.image && (
+          {product.Imagen && (
             <div className="mt-4">
               <p className="text-sm font-medium text-gray-700 mb-2">Image Preview</p>
               <img
-                src={product.image}
+                src={product.Imagen}
                 alt="Product preview"
                 className="w-32 h-32 object-cover rounded-lg border border-gray-300"
               />

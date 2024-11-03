@@ -13,7 +13,7 @@ interface Product {
 }
 
 export default function AdminProducts() {
-  const [showNewProduct, setShowNewProduct] = useState(false);
+  const [showNewProduct, setShowNewProduct] = useState(true);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     category: '',

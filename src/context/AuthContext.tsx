@@ -3,8 +3,8 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
-  user: any | null;
-  login: (email: string, password: string) => Promise<void>;
+  user: { email: string; role: 'admin' | 'customer' } | null;
+  login: (email: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -13,18 +13,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [user, setUser] = useState(null);
+  type user = { email: string; role: 'admin' | 'customer' } | null;
+  const [user, setUser] = useState<{ email: string; role: 'admin' | 'customer' } | null>(null);
 
-  const login = useCallback(async (email: string, password: string) => {
+
+  const login = useCallback(async (email: string) => {
     // Simulate API call
-    if (email === 'admin@freshfoods.com' && password === 'admin123') {
+    if (email === 'hola@gmail.com' || email === 'kponnyo@gmail.com') {
       setIsAuthenticated(true);
       setIsAdmin(true);
-      setUser({ email, role: 'admin' });
-    } else if (email && password) {
+      setUser({email, role: 'admin' });
+    } else if (email) {
       setIsAuthenticated(true);
       setIsAdmin(false);
-      setUser({ email, role: 'customer' });
+      setUser({ email, role: 'customer'});
     }
   }, []);
 

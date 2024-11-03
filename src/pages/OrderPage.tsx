@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useCart } from '../context/CartContext';
+import { pdf } from '@react-pdf/renderer';
+import MyPDFDocument from '../components/PdfOrder';
+import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer";
 
 interface DeliveryInfo {
   name: string;
@@ -35,7 +38,19 @@ export default function OrderPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle order submission
-    console.log('Order submitted:', { items, deliveryInfo, paymentInfo });
+    alert('Order submitted:');
+    CrearPdf();
+  };
+
+  const CrearPdf = async () => {
+    alert("Creadoooooss");
+    const blob = await pdf(<MyPDFDocument />).toBlob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Kuros.pdf';
+    link.click();
+    URL.revokeObjectURL(url); // Limpiar la URL después de la descarga
   };
 
   return (
@@ -76,10 +91,12 @@ export default function OrderPage() {
               <div className="pt-4 text-right">
                 <p className="text-xl font-bold">Total: ${total.toFixed(2)}</p>
               </div>
+
             </div>
           )}
         </div>
 
+     
         {/* Order Form */}
         <div className="bg-white p-6 rounded-lg shadow">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -195,6 +212,7 @@ export default function OrderPage() {
             >
               Place Order
             </button>
+            
           </form>
         </div>
       </div>
